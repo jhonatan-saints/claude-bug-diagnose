@@ -6,7 +6,7 @@
   ![License](https://img.shields.io/badge/license-Apache%202.0-%230a91ff)
   ![Claude Code](https://img.shields.io/badge/Claude%20Code-plugin-%23d97757)
   ![Status](https://img.shields.io/badge/status-prototype-%23f59e0b)
-  ![Version](https://img.shields.io/badge/version-v0.1.0-%230a91ff)
+  ![Version](https://img.shields.io/badge/version-v0.1.1-%230a91ff)
 </div>
 
 ---

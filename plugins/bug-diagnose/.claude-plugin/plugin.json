@@ -1,6 +1,6 @@
 {
   "name": "bug-diagnose",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Diagnose a Jira bug from similar resolved tickets and the commits that fixed them. Read-only, works in any repo with an Atlassian MCP connected.",
   "author": {
     "name": "Jhonatan Santos"
