@@ -20,13 +20,15 @@ A diagnosis only means something if it was produced without the answer. Run the 
 | --- | --- |
 | File hit | The files in the diagnosis include the file the real fix changed |
 | Cause match | The root cause matches the real one, judged by the person who knows the bug |
-| Unsourced facts | Claims marked **Fact** that cite no ticket, commit or `file:line` |
-| Leak | The output used the ticket's own fix, PR or later comments. Any leak invalidates the case |
+| Unsourced facts | Claims tagged `[F]` that cite no ticket, commit or `file:line` |
+| Leak | The output used the ticket's own fix, PR, resolution fields or later comments, or read code after the cutoff. Any leak invalidates the case |
+| Report lines | Lines in the final report, not counting the cutoff line |
+| Off-template | The output has text outside the report shape: intro, recap, narrated steps, extra sections |
 
 ## Bars
 
 - Prototype: file hit and cause match on at least 1 of 2 cases, zero leaks.
-- Before wider release: file hit on 4 of 5, cause match on 3 of 5, zero leaks, zero unsourced facts.
+- Before wider release: file hit on 4 of 5, cause match on 3 of 5, zero leaks, zero unsourced facts, report lines at most 25 and no off-template text on 5 of 5.
 
 ## Keeping cases
 

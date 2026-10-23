@@ -33,9 +33,9 @@ Or just ask: "diagnose PROJ-123". With no key, it looks at the current branch na
 
 1. Fetches the ticket and extracts distinctive error tokens.
 2. Looks at the ticket's links, then searches Jira for up to 3 similar resolved bugs.
-3. Hands those keys to the `bug-history-investigator` agent, which finds each fix in git and summarizes it, keeping large diffs out of the conversation.
+3. Hands those keys and the error tokens to the `bug-history-investigator` agent, which finds each fix in git and summarizes it, keeping large diffs out of the conversation. When Jira finds fewer than 2 similar bugs, the agent also searches git history by token.
 4. Reads the suspect code now, and checks history for regressions.
-5. Reports the problem, similar bugs, a diagnosis with confidence (each claim marked Fact or Hypothesis), and an action plan.
+5. Reports the problem, similar bugs, a diagnosis with confidence (each claim tagged `[F: source]` or `[H]`), and an action plan, in a fixed shape of at most 25 lines.
 
 ## Limits
 

@@ -16,4 +16,6 @@ Result
 - Cause match: yes | no
 - Unsourced facts:
 - Leak: yes | no
+- Report lines:
+- Off-template: yes | no
 - Notes (where it went wrong: JQL, fix not found, code not read, other):

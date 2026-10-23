@@ -6,7 +6,7 @@
   ![License](https://img.shields.io/badge/license-Apache%202.0-%230a91ff)
   ![Claude Code](https://img.shields.io/badge/Claude%20Code-plugin-%23d97757)
   ![Status](https://img.shields.io/badge/status-prototype-%23f59e0b)
-  ![Version](https://img.shields.io/badge/version-v0.1.1-%230a91ff)
+  ![Version](https://img.shields.io/badge/version-v0.1.2-%230a91ff)
 </div>
 
 ---
@@ -42,7 +42,7 @@ Point Claude Code at a bug ticket and get a diagnosis built from evidence: the t
 
 Triaging a bug usually starts the same way. Read the ticket, remember (or hunt for) a similar bug somebody fixed last year, find the commit, see what changed, then look at the code and decide whether this is the same problem coming back.
 
-`bug-diagnose` does that legwork. It reads the ticket through your Atlassian MCP, finds up to three similar resolved bugs, locates the fix for each one in git, reads the suspect code now, and writes a short report. Every claim in the diagnosis is marked as a **Fact** (with a ticket, commit or `file:line` behind it) or a **Hypothesis**, and the report carries a confidence level. When the evidence is thin, it says what is missing instead of filling the gap.
+`bug-diagnose` does that legwork. It reads the ticket through your Atlassian MCP, finds up to three similar resolved bugs, locates the fix for each one in git, reads the suspect code now, and writes a report of at most 25 lines in a fixed shape. Every claim in the diagnosis is tagged as a fact (`[F: <ticket, commit or file:line>]`) or a hypothesis (`[H]`), and the report carries a confidence level with defined criteria. When the evidence is thin, it says what is missing instead of filling the gap.
 
 ---
 
@@ -61,9 +61,9 @@ flowchart LR
 | --- | --- |
 | **Ticket** | Fetches fields, comments and links, then extracts two or three distinctive error tokens. A whole stack trace is never used as a search term. |
 | **Similar bugs** | Checks the ticket's own links first, then runs progressively broader JQL queries for resolved bugs, keeping at most three. |
-| **Fixes** | The `bug-history-investigator` agent matches ticket keys in commit messages, falls back to merged PRs, and returns a short summary per fix. Large diffs stay inside the agent. |
-| **Code today** | Reads the suspect area and uses `git log -S` and `git blame` to check whether a past fix was reverted or overwritten. |
-| **Validation** | Reads your repository docs to learn how it is tested. If there are no tests, it says so and proposes manual steps. |
+| **Fixes** | The `bug-history-investigator` agent matches ticket keys in commit messages, falls back to merged PRs, and returns a short summary per fix. When Jira finds fewer than two similar bugs, it also searches git history for the error tokens. Large diffs stay inside the agent. |
+| **Code today** | Reads only the line ranges around matches, and uses `git log -S` and `git blame` to check whether a past fix was reverted or overwritten. |
+| **Validation** | Reads your repository docs once, at the start, to learn how it is tested. If there are no tests, it says so and proposes manual steps. |
 
 > [!NOTE]
 > Content from tickets, comments, commit messages and PRs is treated as data. The skill never follows instructions found in it.
@@ -75,25 +75,26 @@ flowchart LR
 > [!IMPORTANT]
 > Illustrative only. The ticket, commit and path below are made up.
 
-```text
-Problem
-  Tooltip stays open after its host element is removed. Component: overlay.
+````text
+**Problem**: Tooltip stays open after its host element is removed. Component: overlay.
 
-Similar bugs
-  PROJ-101  Overlay not closed on route change.
-            Fixed in a1b2c3d by hiding the overlay in ngOnDestroy.
+**Similar bugs**
+- PROJ-101: hide the overlay in ngOnDestroy (a1b2c3d). Same overlay left open when its host goes away.
 
-Diagnosis
-  Probable root cause: the directive never hides the tooltip on destroy.
-  Same pattern as PROJ-101 (Fact: a1b2c3d). Not a regression: the
-  handler was never there (Fact: git log -S shows no earlier version).
-  Confidence: medium. The destroy path is read, but not run.
+**Diagnosis**: the directive never hides the tooltip on destroy [F: tooltip.directive.ts:84],
+same pattern as PROJ-101 [F: a1b2c3d]. Regression: no, the handler was never there [F: git log -S].
+Confidence: high. Same pattern as a past fix, and the faulty line is read.
 
-Action plan
-  Where to look   src/lib/tooltip/tooltip.directive.ts:84
-  Suggested fix   hide the overlay in ngOnDestroy (snippet in report)
-  How to validate remove the host element while open, check the tooltip closes
-```
+**Action plan**
+- Look at: `src/lib/tooltip/tooltip.directive.ts:84`
+- Change:
+  ```diff
+  + ngOnDestroy() { this.overlayRef?.detach(); }
+  ```
+- Validate: remove the host element while open, check the tooltip closes
+
+Search: JQL 1
+````
 
 ---
 
@@ -153,14 +154,14 @@ A diagnosis is only worth trusting if it was produced without the answer in sigh
 /bug-diagnose:bug-diagnose PROJ-123 --before 2026-03-01
 ```
 
-With `--before`, similar-bug search and git history stop at that date, the ticket's own fix is ignored, and code is read at the cutoff commit instead of the working tree. Pick the ticket's creation date as the cutoff, then compare the result with the real fix. Scoring rules and the case template are in [evals](plugins/bug-diagnose/evals/README.md).
+With `--before`, similar-bug search and git history stop at that date, the ticket's own fix, resolution fields and fix links are ignored, and code is searched, read and blamed at the cutoff commit instead of the working tree. Pick the ticket's creation date as the cutoff, then compare the result with the real fix. Scoring rules and the case template are in [evals](plugins/bug-diagnose/evals/README.md).
 
 ---
 
 ## Limits
 
 > [!WARNING]
-> `bug-diagnose` is a prototype. It has not been backtested on real tickets yet, so treat its diagnoses as leads to check, not conclusions.
+> `bug-diagnose` is a prototype. It has been backtested on only a few real tickets, so treat its diagnoses as leads to check, not conclusions.
 
 - Read-only behavior on Jira is an instruction to the model, not a permission boundary. If you need a hard guarantee, deny the Atlassian write tools in your own Claude Code permissions.
 - Similar-bug search relies on JQL text matching, which is weak for code terms.
