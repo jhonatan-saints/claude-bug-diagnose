@@ -1,0 +1,8 @@
+<svg width="64" height="64" viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="claude-bug-diagnose logo">
+  <rect width="64" height="64" rx="14" fill="#0a91ff"/>
+  <circle cx="28" cy="28" r="15" fill="none" stroke="#fff" stroke-width="4"/>
+  <path d="M39.5 39.5 L51 51" stroke="#fff" stroke-width="5" stroke-linecap="round"/>
+  <ellipse cx="28" cy="31" rx="5" ry="6.5" fill="#fff"/>
+  <circle cx="28" cy="21.5" r="3" fill="#fff"/>
+  <path d="M23 27 L19 25 M23 31 L18.5 31 M23 35 L19 37 M33 27 L37 25 M33 31 L37.5 31 M33 35 L37 37" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/>
+</svg>
