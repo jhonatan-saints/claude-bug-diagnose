@@ -9,8 +9,13 @@ Diagnose a Jira bug from evidence. Given a ticket key, the plugin reads the tick
 
 ## Install
 
+Add the marketplace, then install the plugin. Run the two commands one at a time.
+
 ```
 /plugin marketplace add jhonatan-saints/claude-bug-diagnose
+```
+
+```
 /plugin install bug-diagnose@bug-diagnose
 ```
 

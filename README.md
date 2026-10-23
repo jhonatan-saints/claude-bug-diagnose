@@ -99,10 +99,20 @@ Action plan
 
 ## Install
 
+**1. Add the marketplace**
+
 ```text
 /plugin marketplace add jhonatan-saints/claude-bug-diagnose
+```
+
+**2. Install the plugin**
+
+```text
 /plugin install bug-diagnose@bug-diagnose
 ```
+
+> [!NOTE]
+> Run the commands one at a time. If you use the `/plugin` menu instead, the "Add Marketplace" field takes only `jhonatan-saints/claude-bug-diagnose`.
 
 For a local checkout, pass the folder path instead of the GitHub name.
 
