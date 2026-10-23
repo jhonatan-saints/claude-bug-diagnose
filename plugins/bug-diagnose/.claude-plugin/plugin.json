@@ -1,11 +1,11 @@
 {
   "name": "bug-diagnose",
-  "version": "0.1.2",
-  "description": "Diagnose a Jira bug from similar resolved tickets and the commits that fixed them. Read-only, works in any repo with an Atlassian MCP connected.",
+  "version": "0.2.0",
+  "description": "Triage a Jira bug: duplicate, fixed in another version, configuration issue or new bug, with similar tickets, the commits that fixed them, a suggested team and the code at fault. Read-only on Jira, works in any repo with an Atlassian MCP connected.",
   "author": {
     "name": "Jhonatan Santos"
   },
   "repository": "https://github.com/jhonatan-saints/claude-bug-diagnose",
   "license": "Apache-2.0",
-  "keywords": ["jira", "debugging", "root-cause", "git"]
+  "keywords": ["jira", "triage", "debugging", "root-cause", "git"]
 }

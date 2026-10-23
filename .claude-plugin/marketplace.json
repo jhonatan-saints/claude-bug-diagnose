@@ -1,14 +1,14 @@
 {
   "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
   "name": "bug-diagnose",
-  "description": "Claude Code plugin that diagnoses a Jira bug from similar resolved tickets and the commits that fixed them.",
+  "description": "Claude Code plugin that triages Jira bugs from similar tickets, logs and the commits that fixed past bugs.",
   "owner": {
     "name": "Jhonatan Santos"
   },
   "plugins": [
     {
       "name": "bug-diagnose",
-      "description": "Diagnose a Jira bug from similar resolved tickets and the commits that fixed them.",
+      "description": "Triage a Jira bug from similar tickets, its logs and the commits that fixed past bugs.",
       "source": "./plugins/bug-diagnose",
       "category": "development"
     }

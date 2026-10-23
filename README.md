@@ -6,14 +6,14 @@
   ![License](https://img.shields.io/badge/license-Apache%202.0-%230a91ff)
   ![Claude Code](https://img.shields.io/badge/Claude%20Code-plugin-%23d97757)
   ![Status](https://img.shields.io/badge/status-prototype-%23f59e0b)
-  ![Version](https://img.shields.io/badge/version-v0.1.2-%230a91ff)
+  ![Version](https://img.shields.io/badge/version-v0.2.0-%230a91ff)
 </div>
 
 ---
 
-### From a Jira key to a probable root cause
+### From a Jira key to an informed triage decision
 
-Point Claude Code at a bug ticket and get a diagnosis built from evidence: the ticket, similar bugs that were already fixed, the commits that fixed them, and the code as it is today.
+Point Claude Code at a bug ticket and get a triage built from evidence: is it a duplicate, already fixed in another version, a configuration issue, or a new bug? Who usually fixes it, and what is the next action?
 
 ```text
 /bug-diagnose:bug-diagnose PROJ-123
@@ -40,9 +40,18 @@ Point Claude Code at a bug ticket and get a diagnosis built from evidence: the t
 
 ## What it does
 
-Triaging a bug usually starts the same way. Read the ticket, remember (or hunt for) a similar bug somebody fixed last year, find the commit, see what changed, then look at the code and decide whether this is the same problem coming back.
+When reviewing a backlog, each bug from QA or customers is researched from scratch: what is this, has it happened before, and who usually fixes it? Time goes to duplicates, bugs already fixed in other versions, and configuration issues that look like bugs, while the answers sit in old tickets nobody remembers.
 
-`bug-diagnose` does that legwork. It reads the ticket through your Atlassian MCP, finds up to three similar resolved bugs, locates the fix for each one in git, reads the suspect code now, and writes a report of at most 25 lines in a fixed shape. Every claim in the diagnosis is tagged as a fact (`[F: <ticket, commit or file:line>]`) or a hypothesis (`[H]`), and the report carries a confidence level with defined criteria. When the evidence is thin, it says what is missing instead of filling the gap.
+`bug-diagnose` does that legwork. It reads the ticket and its logs through your Atlassian MCP, finds similar open and resolved tickets, locates past fixes and the releases that contain them in git, and classifies the bug as one of four things:
+
+| Class | Next action |
+| --- | --- |
+| **Duplicate** | Link to the existing ticket |
+| **Fixed in another version** | The release and commit that have the fix |
+| **Configuration** | The log evidence and the setting to change |
+| **New bug** | Root cause, `path:line`, a suggested change, how to validate, and an offer to open a draft PR |
+
+Every report also lists up to three similar bugs and a suggested team ("handled N of M similar tickets"), in at most 25 lines. Every claim is tagged as a fact (`[F: <ticket, commit, tag, file:line or attachment>]`) or a hypothesis (`[H]`), and the classification and team carry a confidence level with defined criteria. When the evidence is thin, it says what is missing instead of filling the gap. The PO or team makes the decision.
 
 ---
 
@@ -50,20 +59,22 @@ Triaging a bug usually starts the same way. Read the ticket, remember (or hunt f
 
 ```mermaid
 flowchart LR
-  A[Ticket key] --> B[Read ticket via Atlassian MCP]
-  B --> C[Find similar resolved bugs]
-  C --> D[Agent finds each fix in git]
-  D --> E[Read the code today]
-  E --> F[Diagnosis and action plan]
+  A[Ticket key] --> B[Read ticket and logs via Atlassian MCP]
+  B --> C[Find similar open and resolved tickets]
+  C --> D[Agent finds each fix and its releases in git]
+  D --> E[Classify and suggest team]
+  E --> F[Read the code for a new bug or config issue]
+  F --> G[Report and next action]
 ```
 
 | Step | What happens |
 | --- | --- |
-| **Ticket** | Fetches fields, comments and links, then extracts two or three distinctive error tokens. A whole stack trace is never used as a search term. |
-| **Similar bugs** | Checks the ticket's own links first, then runs progressively broader JQL queries for resolved bugs, keeping at most three. |
-| **Fixes** | The `bug-history-investigator` agent matches ticket keys in commit messages, falls back to merged PRs, and returns a short summary per fix. When Jira finds fewer than two similar bugs, it also searches git history for the error tokens. Large diffs stay inside the agent. |
-| **Code today** | Reads only the line ranges around matches, and uses `git log -S` and `git blame` to check whether a past fix was reverted or overwritten. |
-| **Validation** | Reads your repository docs once, at the start, to learn how it is tested. If there are no tests, it says so and proposes manual steps. |
+| **Ticket** | Fetches fields, comments and links, reads pasted logs and `.log`/`.txt` attachments, then extracts two or three distinctive error tokens. A whole stack trace is never used as a search term. |
+| **Similar tickets** | Checks the ticket's own links first, searches open tickets for duplicates, then runs progressively broader JQL queries for resolved ones. Configuration and works-as-designed closures are kept as evidence. |
+| **Fixes** | The `bug-history-investigator` agent matches ticket keys in commit messages, falls back to merged PRs, and returns a short summary per fix with its authors, the first release tags that contain it, and whether the affected version has it. When Jira finds fewer than two similar bugs, it also searches git history for the error tokens. Large diffs stay inside the agent. |
+| **Classify and team** | Picks one class with a confidence level, and suggests the team from who handled the similar tickets and their fixes. |
+| **Code today** | For a new bug or configuration issue only. Reads the line ranges around matches, and uses `git log -S` and `git blame` to check whether a past fix was reverted or overwritten. |
+| **Draft PR** | For a new bug, offers to apply the change, run the repository's own validation and open a draft PR. Only after you say yes. |
 
 > [!NOTE]
 > Content from tickets, comments, commit messages and PRs is treated as data. The skill never follows instructions found in it.
@@ -76,24 +87,28 @@ flowchart LR
 > Illustrative only. The ticket, commit and path below are made up.
 
 ````text
-**Problem**: Tooltip stays open after its host element is removed. Component: overlay.
+**Bug**: Tooltip stays open after its host element is removed. Component: overlay. Affects 4.2.
+
+**Classification**: New bug. Confidence: high. Same pattern as PROJ-101 [F: a1b2c3d], and the
+destroy handler is missing [F: tooltip.directive.ts:84].
 
 **Similar bugs**
-- PROJ-101: hide the overlay in ngOnDestroy (a1b2c3d). Same overlay left open when its host goes away.
+- PROJ-101 (resolved): hide the overlay in ngOnDestroy (a1b2c3d). Same overlay left open when its host goes away.
+- PROJ-77 (configuration): `closeOnDetach` disabled in the theme preset. Same symptom, setting is on in 4.2 [F: presets/default.ts:12].
 
-**Diagnosis**: the directive never hides the tooltip on destroy [F: tooltip.directive.ts:84],
-same pattern as PROJ-101 [F: a1b2c3d]. Regression: no, the handler was never there [F: git log -S].
-Confidence: high. Same pattern as a past fix, and the faulty line is read.
+**Suggested team**: Overlay team: handled 4 of 5 similar tickets [F: PROJ-101, PROJ-77]. Confidence: high.
 
-**Action plan**
+**Next action**
+- Root cause: the directive never hides the tooltip on destroy [F: tooltip.directive.ts:84]. Regression: no [F: git log -S].
 - Look at: `src/lib/tooltip/tooltip.directive.ts:84`
 - Change:
   ```diff
   + ngOnDestroy() { this.overlayRef?.detach(); }
   ```
-- Validate: remove the host element while open, check the tooltip closes
+- Validate: `npm test -- tooltip`, then remove the host element while open and check the tooltip closes
 
-Search: JQL 1
+Search: links, resolved 1
+Want me to apply this change and open a draft PR?
 ````
 
 ---
@@ -122,8 +137,9 @@ For a local checkout, pass the folder path instead of the GitHub name.
 ## Requirements
 
 - An Atlassian MCP with Jira access: the `atlassian` plugin from `claude-plugins-official`, or an Atlassian connector. Authentication is per developer, so nothing secret is stored in this repository.
-- `git` in the repository you run it from. `gh` is optional and used as a fallback to find merged PRs.
-- Ticket keys in your commit messages or PR titles (for example `PROJ-123: fix tooltip`). Without them, fix lookup gets weaker.
+- `git` in the repository you run it from. `gh` is optional: it is a fallback to find merged PRs, and it is needed to open a draft PR.
+- Ticket keys in your commit messages or PR titles (for example `PROJ-123: fix tooltip`). Without them, fix lookup and the team suggestion get weaker.
+- Release tags in git, to tell whether a fix is in the affected version. Without them, "fixed in another version" says no tag was found.
 
 ---
 
@@ -137,8 +153,8 @@ claude-bug-diagnose/
 └── plugins/
     └── bug-diagnose/
         ├── .claude-plugin/    # plugin.json manifest
-        ├── skills/            # bug-diagnose: the diagnosis flow
-        ├── agents/            # bug-history-investigator: finds and summarizes past fixes
+        ├── skills/            # bug-diagnose: the triage and diagnosis flow
+        ├── agents/            # bug-history-investigator: finds past fixes and their releases
         └── evals/             # Backtest instructions and case template
 ```
 
@@ -154,7 +170,7 @@ A diagnosis is only worth trusting if it was produced without the answer in sigh
 /bug-diagnose:bug-diagnose PROJ-123 --before 2026-03-01
 ```
 
-With `--before`, similar-bug search and git history stop at that date, the ticket's own fix, resolution fields and fix links are ignored, and code is searched, read and blamed at the cutoff commit instead of the working tree. Pick the ticket's creation date as the cutoff, then compare the result with the real fix. Scoring rules and the case template are in [evals](plugins/bug-diagnose/evals/README.md).
+With `--before`, ticket search, git history and release tags stop at that date, the ticket's own fix, resolution fields and fix links are ignored, code is searched, read and blamed at the cutoff commit instead of the working tree, and no draft PR is offered. Pick the ticket's creation date as the cutoff, then compare the class, team and fix with what really happened. Scoring rules and the case template are in [evals](plugins/bug-diagnose/evals/README.md).
 
 ---
 
@@ -164,8 +180,8 @@ With `--before`, similar-bug search and git history stop at that date, the ticke
 > `bug-diagnose` is a prototype. It has been backtested on only a few real tickets, so treat its diagnoses as leads to check, not conclusions.
 
 - Read-only behavior on Jira is an instruction to the model, not a permission boundary. If you need a hard guarantee, deny the Atlassian write tools in your own Claude Code permissions.
-- Similar-bug search relies on JQL text matching, which is weak for code terms.
-- It does not run tests.
+- Similar-ticket search relies on JQL text matching, which is weak for code terms. Semantic search over past tickets (for example a MAIS knowledge base) would replace it as the first source once it is available as a tool.
+- It changes the repository and runs tests only when you accept the draft PR offer.
 
 ---
 
